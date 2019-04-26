@@ -106,7 +106,7 @@ struct thread
 
     bool wait;
     bool success;
-    struct list child_list;             /* List of child. */
+    struct list child_list;             /* List of children. */
     struct list_elem child_elem;        /* children list element. */
     int exit_status;
     struct file* f_d[128];               /* File descriptor. */     

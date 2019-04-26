@@ -114,7 +114,7 @@ syscall_handler (struct intr_frame *f)
     }
 
     //syscall1 (SYS_WAIT, pid);
-    case SYS_WAIT: //3   //FIXME:
+    case SYS_WAIT: //3
     {
       check_valid_pointer((f->esp) + 4); //pid = tid = first
       f->eax = process_wait((tid_t)first);
@@ -159,7 +159,8 @@ syscall_handler (struct intr_frame *f)
       if(first == NULL) 
       {
         userp_exit(-1);
-      }
+      } 
+
       check_valid_pointer((f->esp) + 4); //file = first
       check_valid_pointer(*(char **)(f->esp + 4)); //also a pointer
       // if(get_user((uint8_t *)(f->esp + 4)) == -1) //check if null or unmapped
@@ -180,7 +181,7 @@ syscall_handler (struct intr_frame *f)
       {
         f->eax = -1;
         sema_down(&file_sema);
-        if(strcmp(thread_current()->name, file) == 0) //FIXME: rox check
+        if(strcmp(thread_current()->name, file) == 0)
         {
           file_deny_write(fp);
         }
@@ -292,7 +293,7 @@ syscall_handler (struct intr_frame *f)
         {
           userp_exit(-1);
         }
-        if(thread_current()->f_d[fd]->deny_write)  //FIXME: rox check
+        if(thread_current()->f_d[fd]->deny_write)
         {
           sema_down(&file_sema);
           file_deny_write(thread_current()->f_d[fd]);
@@ -355,7 +356,6 @@ syscall_handler (struct intr_frame *f)
       sema_down(&file_sema);
       file_allow_write(thread_current()->f_d[fd]);
       file_close(thread_current()->f_d[fd]);
-      // file_allow_write(thread_current()->f_d[fd]);  //FIXME: it occurs error ... wrong position?
       sema_up(&file_sema);
 
       thread_current()->f_d[fd] = NULL;  //file closed -> make it NULL
