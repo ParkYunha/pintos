@@ -156,7 +156,7 @@ syscall_handler (struct intr_frame *f)
     //syscall1 (SYS_OPEN, file);
     case SYS_OPEN: //6
     { 
-      if(first == NULL)
+      if(first == NULL) 
       {
         userp_exit(-1);
       }
