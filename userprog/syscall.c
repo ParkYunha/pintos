@@ -57,25 +57,25 @@ void check_valid_pointer(const void *vaddr)
 }
 
 void
-syscall_init (void) 
+syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
 static void
-syscall_handler (struct intr_frame *f) 
+syscall_handler (struct intr_frame *f)
 {
-  // ASSERT(f!= NULL); 
+  // ASSERT(f!= NULL);
   // ASSERT(f->esp != NULL);
   // ASSERT(pagedir_get_page(thread_current()->pagedir, f->esp) != NULL);
-  
+
   //sc-bad-sp
   check_valid_pointer(f->esp);
   if(get_user((uint8_t *)f->esp) == -1)
   {
     userp_exit(-1);
   }
-  
+
 
   int sys_num  = *(uint32_t *)(f->esp);
 
@@ -101,7 +101,7 @@ syscall_handler (struct intr_frame *f)
       int status = (int)*(uint32_t *)((f->esp) + 4);
 
       userp_exit(status);
-      break;  
+      break;
     }
 
     //syscall1 (SYS_EXEC, file);
@@ -109,7 +109,7 @@ syscall_handler (struct intr_frame *f)
     {
       check_valid_pointer((f->esp) + 4); //file = first
       f->eax = process_execute(*(const char **)(f->esp+4));
-      //process_execute(*(char **)((f->esp) + 4)); 
+      //process_execute(*(char **)((f->esp) + 4));
       break;
     }
 
@@ -128,10 +128,10 @@ syscall_handler (struct intr_frame *f)
       if(first == NULL)
       {
         userp_exit(-1);
-      }      
+      }
       check_valid_pointer((f->esp) + 4); //file = first
       check_valid_pointer((f->esp) + 8); //initial_size = second
-      check_valid_pointer(second); //also a pointer 
+      check_valid_pointer(second); //also a pointer
 
       sema_down(&file_sema);
       f->eax = filesys_create((const char *)first, (int32_t)(second));
@@ -155,11 +155,11 @@ syscall_handler (struct intr_frame *f)
 
     //syscall1 (SYS_OPEN, file);
     case SYS_OPEN: //6
-    { 
-      if(first == NULL) 
+    {
+      if(first == NULL)
       {
         userp_exit(-1);
-      } 
+      }
 
       check_valid_pointer((f->esp) + 4); //file = first
       check_valid_pointer(*(char **)(f->esp + 4)); //also a pointer
@@ -186,7 +186,7 @@ syscall_handler (struct intr_frame *f)
           file_deny_write(fp);
         }
         sema_up(&file_sema);
-            
+
         for(i = 3; i < 128; ++i)
         {
           if(thread_current()->f_d[i] == NULL)
@@ -198,7 +198,7 @@ syscall_handler (struct intr_frame *f)
           }
         }
       }
-      
+
       break;  //end open
     }
 
@@ -221,7 +221,7 @@ syscall_handler (struct intr_frame *f)
     }
 
     //syscall3 (SYS_READ, fd, buffer, size);
-    case SYS_READ: //8 
+    case SYS_READ: //8
     {
       check_valid_pointer((f->esp) + 4); //fd = first
       check_valid_pointer((f->esp) + 8); //buffer = second
@@ -340,7 +340,7 @@ syscall_handler (struct intr_frame *f)
       sema_down(&file_sema);
       file_tell(thread_current()->f_d[fd]);
       sema_up(&file_sema);
-      break; 
+      break;
     }
 
     //syscall1 (SYS_CLOSE, fd);
@@ -352,7 +352,7 @@ syscall_handler (struct intr_frame *f)
         userp_exit(-1);
       }
       check_valid_pointer((f->esp) + 4); //fd = first
-      
+
       sema_down(&file_sema);
       file_allow_write(thread_current()->f_d[fd]);
       file_close(thread_current()->f_d[fd]);
@@ -380,5 +380,5 @@ void userp_exit (int status)  //userprog_exit
     }
   }
   printf("%s: exit(%d)\n", thread_name(), status);
-  thread_exit(); 
+  thread_exit();
 }
