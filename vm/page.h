@@ -1,13 +1,15 @@
 #ifndef VM_PAGE_H
 #define VM_PAGE_H
 
-struct sup_page_table_entry 
+struct sup_page_table_entry
 {
 	uint32_t* user_vaddr;
 	uint64_t access_time;
 
 	bool dirty;
 	bool accessed;
+
+	struct hash_elem hash_elem; //
 };
 
 void page_init (void);
