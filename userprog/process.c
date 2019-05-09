@@ -18,6 +18,9 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+/* project 3 */
+#include "vm/frame.h"
+#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -200,9 +203,7 @@ start_process (void *cmd)
   palloc_free_page (file_name);  //free fn_copy
 
   /* Prevent parent do something during child creating. */
-  sema_up(&(thread_current()->load_lock));  //thread_current() = child => lock parent
-  // sema_down(&(thread_current()->load_suc_lock)); //TODO:
-  
+  sema_up(&(thread_current()->load_lock));  //thread_current() = child => lock parent  
   
   /* If load failed, quit. */
   if (!success)  //missing file..
