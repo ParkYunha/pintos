@@ -615,7 +615,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   sema_down(&file_sema);
-  file_seek (file, ofs);
+  file_seek (file, ofs); 
   sema_up(&file_sema);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
@@ -626,7 +626,9 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
+      // uint8_t *kpage = palloc_get_page(PAL_USER); //pj2
+      uint8_t *kpage = allocate_frame(upage); //pj3
+
       if (kpage == NULL)
         return false;
 
@@ -664,7 +666,9 @@ setup_stack (void **esp)
   uint8_t *kpage;
   bool success = false;
 
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  // kpage = palloc_get_page (PAL_USER | PAL_ZERO); //pj2
+  kpage = allocate_frame(*esp); //pj3
+
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);

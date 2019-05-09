@@ -11,6 +11,7 @@
 struct frame_table_entry
 {
 	uint32_t* frame;
+	uint32_t* vaddr;
 	struct thread* owner;
 	struct sup_page_table_entry* spte;
 
@@ -22,6 +23,6 @@ struct list frame_table_list;
 
 
 void frame_init (void);
-bool allocate_frame (void *addr);
+void* allocate_frame (void *addr);
 
 #endif /* vm/frame.h */
