@@ -109,10 +109,13 @@ struct thread
     struct list child_list;             /* List of children. */
     struct list_elem child_elem;        /* children list element. */
     int exit_status;
-    struct file* f_d[128];               /* File descriptor. */     
-    
+    struct file* f_d[128];               /* File descriptor. */
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /*project3*/
+    struct hash *page_table;
   };
 
 /* If false (default), use round-robin scheduler.
