@@ -14,10 +14,9 @@
 #include "vm/page.h"
 #include "vm/swap.h"
 
- /* Initialize frame table. */
- /* Given in skeleton. */
-void
-frame_init (void)
+/* Initialize frame table. */
+/* Given in skeleton. */
+void frame_init(void)
 {
   lock_init(&frame_table_lock);
   list_init(&frame_table_list);
@@ -33,16 +32,17 @@ frame_init (void)
 
 /* Make a new frame table entry for addr. */
 /* Given in skeleton. */
-void* //-> 제대로 allocate 됐는지 리턴하라는 건가??
-allocate_frame (void *addr)
+void * //-> 제대로 allocate 됐는지 리턴하라는 건가??
+allocate_frame(void *addr)
 {
 
   // return palloc_get_page(PAL_USER); //for debugging
 
   lock_acquire(&frame_table_lock);
-  
+
   void *frame_page = palloc_get_page(PAL_USER); //from user pool
-  if(frame_page == NULL) {
+  if (frame_page == NULL)
+  {
     /* If page allocation failed. */
     //TODO: 뭔가 pdf에서 패닉해라 뭐해라 있었던 듯
     lock_release(&frame_table_lock);
@@ -50,7 +50,8 @@ allocate_frame (void *addr)
   }
 
   struct frame_table_entry *fte = malloc(sizeof(struct frame_table_entry));
-  if(fte == NULL) {
+  if (fte == NULL)
+  {
     /* If frame allocation failed. */
     lock_release(&frame_table_lock);
     return NULL;
@@ -67,6 +68,25 @@ allocate_frame (void *addr)
   return frame_page;
 }
 
-
 //TODO: free frame function
+void frame_free(void *frame)
+{
+  struct list_elem *l_elem;
+
+  lock_acquire(&frame_table_lock);
+  for (l_elem = list_begin(&frame_table_list); l_elem != list_end(&frame_table_list); 
+        l_elem = list_next(l_elem))
+  {
+    struct frame_table_entry *fte = list_entry(l_elem, struct frame_table_entry, elem);
+    if (fte->frame == frame)
+    {
+      list_remove(l_elem);
+      free(fte);
+      palloc_free_page(frame);
+      break;
+    }
+  }
+  lock_release(&frame_table_lock);
+}
+
 //TODO: frame_evict()

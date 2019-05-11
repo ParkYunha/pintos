@@ -27,6 +27,8 @@ struct sup_page_table_entry
 
 	bool dirty_bit;
 	bool accessed_bit;
+	bool writable;
+	bool is_loaded;
 
 	uint32_t read_bytes; // page에 쓰여져 있는 데이터 크기
 	uint32_t zero_bytes; // 남은 페이지의 크기, 0으로 채우려고
@@ -37,9 +39,18 @@ struct sup_page_table_entry
 };
 
 void page_init (struct hash *spt);
-struct sup_page_table_entry *allocate_page (void *addr);
+struct sup_page_table_entry *allocate_page (void *addr, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable);
 
 static unsigned page_hash_func (const struct hash_elem *e, void *aux UNUSED);
 static bool page_less_func (const struct hash_elem *a, const struct hash_elem *b);
+
+struct sup_page_table_entry *find_spte(struct hash *spt, void *addr);
+bool load_page_file(struct sup_page_table_entry *spte);
+
+struct sup_page_table_entry * find_spte(struct hash *spt, void *addr);
+bool insert_spte(struct hash *spt, struct sup_page_table_entry *spte);
+bool remove_spte(struct hash *spt, struct sup_page_table_entry *spte);
+void spt_destructor(struct hash_elem *elem);
+void destroy_spt(struct hash *spt);
 
 #endif /* vm/page.h */

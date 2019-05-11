@@ -23,6 +23,7 @@ struct list frame_table_list;
 
 
 void frame_init (void);
+void frame_free(void *frame);
 void* allocate_frame (void *addr);
 
 #endif /* vm/frame.h */
