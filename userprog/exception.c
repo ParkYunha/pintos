@@ -153,42 +153,43 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-   // printf("0x%x\n", fault_addr);
+
 
   if(!user || is_kernel_vaddr(fault_addr) ) //
   {
-   //   printf("%d\t0x%x\n", user, fault_addr);
-   //   printf("3\n");
      userp_exit(-1);
-      // printf("%s: exit(%d)\n", thread_name(), -1);
-      // thread_exit();
+  } 
 
-  } //bad-jump2 
+  bool success = false;
+  if(not_present && is_user_vaddr(fault_addr))
+  {
+    struct sup_page_table_entry *spte 
+            = find_spte(&thread_current()->page_table, fault_addr);
+    if(spte)
+    {
+       success = load_page_file(spte);  //load and install_page
+    }
+    else if(f->esp - 32 < fault_addr)
+    {
+       success = stack_growth(fault_addr);
+    }
+  }
+   
+   
+  if(!user) //kernel
+  {
+    f->eip = (void *)f->eax;
+    f->eax = 0xffffffff; //FIXME: not sure
+    return; //??
+}
 
-   if(!user) //kernel
-   {
-      f->eip = (void *)f->eax;
-      f->eax = 0xffffffff; //FIXME: not sure
-      return; //??
-   }
-
-   struct sup_page_table_entry *spte;
-   // printf("0x%x\n", fault_addr);
-   spte = find_spte(&thread_current()->page_table, fault_addr); // fault된거 spte찾기
-   if (spte != NULL)
-   {
-      
-      // printf("123123123123123\n");
-     load_page_file(spte);
-     return;
-   }
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
-  kill (f);
+//   printf ("Page fault at %p: %s error %s page in %s context.\n",
+//           fault_addr,
+//           not_present ? "not present" : "rights violation",
+//           write ? "writing" : "reading",
+//           user ? "user" : "kernel");
+//   kill (f);
 }
