@@ -6,6 +6,9 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "filesys/file.h"
+#include "filesys/filesys.h"
+#include "vm/page.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -149,15 +152,18 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
-/*
-  if(!user || is_kernel_vaddr(fault_addr) || not_present ) //
+
+   // printf("0x%x\n", fault_addr);
+
+  if(!user || is_kernel_vaddr(fault_addr) ) //
   {
-    printf("3\n");
+   //   printf("%d\t0x%x\n", user, fault_addr);
+   //   printf("3\n");
      userp_exit(-1);
       // printf("%s: exit(%d)\n", thread_name(), -1);
       // thread_exit();
 
-  } //bad-jump2
+  } //bad-jump2 
 
    if(!user) //kernel
    {
@@ -165,11 +171,14 @@ page_fault (struct intr_frame *f)
       f->eax = 0xffffffff; //FIXME: not sure
       return; //??
    }
-*/
+
    struct sup_page_table_entry *spte;
-   spte = find_spte(thread_current()->page_table, fault_addr); // fault된거 spte찾기
+   // printf("0x%x\n", fault_addr);
+   spte = find_spte(&thread_current()->page_table, fault_addr); // fault된거 spte찾기
    if (spte != NULL)
    {
+      
+      // printf("123123123123123\n");
      load_page_file(spte);
      return;
    }

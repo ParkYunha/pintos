@@ -3,6 +3,7 @@
 
 #include <debug.h>
 #include <list.h>
+#include <hash.h>
 #include <stdint.h>
 #include "synch.h"   //semaphore
 
@@ -115,7 +116,7 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
 
     /*project3*/
-    struct hash *page_table;
+    struct hash page_table;
   };
 
 /* If false (default), use round-robin scheduler.

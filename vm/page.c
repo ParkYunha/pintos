@@ -17,7 +17,8 @@ static unsigned
 page_hash_func(const struct hash_elem *e, void *aux UNUSED)
 {
   const struct sup_page_table_entry *spte = hash_entry(e, struct sup_page_table_entry, hash_elem);
-  return hash_int((int)spte->user_vaddr); // vaddr의  해시값 반환
+  return hash_bytes(&spte->user_vaddr, sizeof(&spte->user_vaddr));
+  // return hash_int((int)spte->user_vaddr); // vaddr의  해시값 반환
 }
 
 /* Compare their vaddr => return true if a('s vaddr) is smaller than b */
@@ -42,10 +43,9 @@ allocate_page(void *addr, struct file *file, off_t ofs, uint32_t read_bytes, uin
   {
     return NULL;
   }
-
   /*set sup_page_table_entry */
   spte->user_vaddr = pg_round_down(addr); //addr이 포함되는 page 시작 주소를 반환
-  spte->file = file;
+  spte->file = file; 
   spte->writable = writable;
   spte->is_loaded = false;
   spte->read_bytes = read_bytes;
@@ -53,9 +53,55 @@ allocate_page(void *addr, struct file *file, off_t ofs, uint32_t read_bytes, uin
   spte->offset = ofs;
 
   hash_insert(&thread_current()->page_table, &spte->hash_elem); //hash 에 elem 넣어주기
-  
   return spte;
 }
+
+/* expend stack by 1 page. */
+bool 
+stack_growth (void * uv_addr)
+{
+  // check if it is in valid stack range. //
+  if ((size_t) (PHYS_BASE - pg_round_down(uv_addr)) > MAX_STACK_SIZE)
+  {
+      return false;
+  }
+  // Create spte. //
+  struct sup_page_table_entry *spte = malloc(sizeof(struct sup_page_table_entry));
+  if (spte == NULL)
+  {
+    return false;
+    }
+    // Setup spte. //
+    spte->user_vaddr = pg_round_down(uv_addr);
+    spte->is_loaded = true;
+    spte->writable = true;
+  //allocate frame //
+  uint8_t *frame = allocate_frame (PAL_USER, spte);
+  if (!frame) //if failed alllocation
+    {
+      free(spte);
+      return false;
+    }
+  // install page //
+  if (!install_page(spte->user_vaddr, frame, spte->writable))
+    {
+      free(spte);
+      frame_free(frame);
+      return false;
+    }
+
+  // if (intr_context())
+  //   {
+  //     spte->pinned = false;
+  //   }
+
+  // Put entry into page table(hash). //
+  return (hash_insert(&thread_current()->page_table, &spte->hash_elem) == NULL);
+}
+
+
+
+
 
 
 /* addr이 포함된 spte를 spt에서 찾는 함수*/
@@ -64,17 +110,17 @@ struct sup_page_table_entry *
 find_spte(struct hash *spt, void *addr)
 {
   struct sup_page_table_entry spte;
+  
   spte.user_vaddr = pg_round_down(addr);
-
-  struct hash_elem *h_elem;
+  struct hash_elem *h_elem = NULL;
   h_elem = hash_find(spt, &spte.hash_elem);
-
   if (h_elem == NULL)
   {
     return NULL;
   }
 
-  return hash_entry(h_elem, struct sup_page_table_entry, hash_elem);
+  struct sup_page_table_entry* spte2 = hash_entry(h_elem, struct sup_page_table_entry, hash_elem);
+  return spte2;
 }
 
 /* Insert spte to spt. */
@@ -130,19 +176,24 @@ destroy_spt(struct hash *spt)
 /* load page <- file */
 bool load_page_file(struct sup_page_table_entry *spte)
 {
-  file_seek(spte->file, spte->offset);
+  // file_seek(spte->file, spte->offset);
   void *frame_page = allocate_frame(spte->user_vaddr);
   if (frame_page != NULL)
   {
-    if (file_read(spte->file, frame_page, spte->read_bytes) == (int)spte->read_bytes)
+    // sema_down(&file_sema);
+    int test = file_read_at(spte->file, frame_page, spte->read_bytes, spte->offset);
+    // sema_up(&file_sema);
+    if (test == (off_t)spte->read_bytes)
     {
       memset(frame_page + spte->read_bytes, 0, spte->zero_bytes);
       /* Adds a mapping from user virtual address UPAGE to kernel
            virtual address KPAGE to the page table.*/
+      // printf("0x%x : 0x%x\n", spte->user_vaddr, frame_page);
       install_page(spte->user_vaddr, frame_page, spte->writable);
       spte->is_loaded = true; //FIXME:
       return true;
     }
+    printf("asdfasdf\n");
     //TODO: else frame free 해줘야됨
   }
 

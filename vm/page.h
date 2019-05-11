@@ -20,6 +20,9 @@
 #include "userprog/process.h"
 #include "userprog/syscall.h"
 
+// 8MB
+#define MAX_STACK_SIZE (1<<23) 
+
 struct sup_page_table_entry
 {
 	uint32_t* user_vaddr;
@@ -52,5 +55,7 @@ bool insert_spte(struct hash *spt, struct sup_page_table_entry *spte);
 bool remove_spte(struct hash *spt, struct sup_page_table_entry *spte);
 void spt_destructor(struct hash_elem *elem);
 void destroy_spt(struct hash *spt);
+
+bool stack_growth (void * uv_addr);
 
 #endif /* vm/page.h */
