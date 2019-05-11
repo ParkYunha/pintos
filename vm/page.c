@@ -76,7 +76,7 @@ stack_growth (void * uv_addr)
     spte->is_loaded = true;
     spte->writable = true;
   //allocate frame //
-  uint8_t *frame = allocate_frame (PAL_USER, spte);
+  uint8_t *frame = allocate_frame (spte, PAL_USER);
   if (!frame) //if failed alllocation
     {
       free(spte);
@@ -177,27 +177,32 @@ destroy_spt(struct hash *spt)
 bool load_page_file(struct sup_page_table_entry *spte)
 {
   // file_seek(spte->file, spte->offset);
-  void *frame_page = allocate_frame(spte->user_vaddr);
+  enum palloc_flags flags = PAL_USER;
+  if(spte->read_bytes == 0){
+    flags = (PAL_USER | PAL_ZERO);
+  }
+  void *frame_page = allocate_frame(spte->user_vaddr, flags); 
+
   if (frame_page != NULL)
   {
-    // sema_down(&file_sema);
-    int test = file_read_at(spte->file, frame_page, spte->read_bytes, spte->offset);
-    // sema_up(&file_sema);
-    if (test == (off_t)spte->read_bytes)
+    sema_down(&file_sema);
+    int rfile = file_read_at(spte->file, frame_page, spte->read_bytes, spte->offset);
+    sema_up(&file_sema);
+    if (rfile == (off_t)spte->read_bytes)
     {
       memset(frame_page + spte->read_bytes, 0, spte->zero_bytes);
-      /* Adds a mapping from user virtual address UPAGE to kernel
-           virtual address KPAGE to the page table.*/
-      // printf("0x%x : 0x%x\n", spte->user_vaddr, frame_page);
-      install_page(spte->user_vaddr, frame_page, spte->writable);
-      spte->is_loaded = true; //FIXME:
-      return true;
-    }
-    printf("asdfasdf\n");
-    //TODO: else frame free 해줘야됨
-  }
 
-  return false;
+      if(! install_page(spte->user_vaddr, frame_page, spte->writable)) {
+        frame_free(frame_page);
+        return false;
+      }
+    } else { 
+      frame_free(frame_page);
+      return false;
+    }
+  }
+  spte->is_loaded = true;
+  return true;
 }
 
 // TODO: load_page_swap, load_page_mmap 도 나중에 만들어줘야할듯

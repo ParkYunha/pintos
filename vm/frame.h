@@ -24,6 +24,6 @@ struct list frame_table_list;
 
 void frame_init (void);
 void frame_free(void *frame);
-void* allocate_frame (void *addr);
+void* allocate_frame (void *addr, enum palloc_flags flags);
 
 #endif /* vm/frame.h */

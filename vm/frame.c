@@ -33,14 +33,14 @@ void frame_init(void)
 /* Make a new frame table entry for addr. */
 /* Given in skeleton. */
 void * //-> 제대로 allocate 됐는지 리턴하라는 건가??
-allocate_frame(void *addr)
+allocate_frame(void *addr, enum palloc_flags flags)
 {
 
   // return palloc_get_page(PAL_USER); //for debugging
 
   lock_acquire(&frame_table_lock);
 
-  void *frame_page = palloc_get_page(PAL_USER); //from user pool
+  void *frame_page = palloc_get_page(flags); //from user pool
   if (frame_page == NULL)
   {
     /* If page allocation failed. */
