@@ -21,6 +21,7 @@
 /* project 3 */
 #include "vm/frame.h"
 #include "vm/page.h"
+#include "vm/swap.h"
 
 static thread_func start_process NO_RETURN;
 static bool load(const char *cmdline, void (**eip)(void), void **esp);
@@ -677,7 +678,7 @@ setup_stack(void **esp)
   if (success)
   {
     *esp = PHYS_BASE;
-  } 
+  }
 
   // else
   //   palloc_free_page(kpage);
@@ -702,3 +703,17 @@ bool install_page(void *upage, void *kpage, bool writable)
      address, then map our page there. */
   return (pagedir_get_page(t->pagedir, upage) == NULL && pagedir_set_page(t->pagedir, upage, kpage, writable));
 }
+
+
+
+
+
+// bool handle_mm_fault(struct sup_page_table_entry *spte)
+// {
+//   bool success = false;
+//     if(spte)                           //is it from valid region?
+//     {
+//        success = load_page_file(spte);  //load and install_page
+//     }
+//   return success;
+// }

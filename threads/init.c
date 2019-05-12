@@ -116,6 +116,7 @@ main (void)
 #ifdef FILESYS
   /* Initialize file system. */
   disk_init ();
+  swap_init ();
   filesys_init (format_filesys);
 #endif
 

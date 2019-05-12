@@ -55,9 +55,10 @@ userprog_SRC += userprog/gdt.c		# GDT initialization.
 userprog_SRC += userprog/tss.c		# TSS management.
 
 # No virtual memory code yet.
+#vm_SRC = vm/file.c			# Some file.
 vm_SRC = vm/frame.c
 vm_SRC += vm/page.c
-#vm_SRC = vm/file.c			# Some file.
+vm_SRC += vm/swap.c
 
 # Filesystem code.
 filesys_SRC  = filesys/filesys.c	# Filesystem core.
@@ -74,7 +75,7 @@ DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))
 threads/kernel.lds.s: CPPFLAGS += -P
 threads/kernel.lds.s: threads/kernel.lds.S threads/loader.h
 
-kernel.o: threads/kernel.lds.s $(OBJECTS) 
+kernel.o: threads/kernel.lds.s $(OBJECTS)
 	$(LD) -T $< -o $@ $(OBJECTS)
 
 kernel.bin: kernel.o
@@ -92,7 +93,7 @@ os.dsk: loader.bin kernel.bin
 	cat $^ > $@
 
 clean::
-	rm -f $(OBJECTS) $(DEPENDS) 
+	rm -f $(OBJECTS) $(DEPENDS)
 	rm -f threads/loader.o threads/kernel.lds.s threads/loader.d
 	rm -f kernel.o kernel.lds.s
 	rm -f kernel.bin loader.bin os.dsk

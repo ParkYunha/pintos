@@ -6,6 +6,7 @@
 #include <list.h>
 
 #include "vm/page.h"
+#include "vm/swap.h"
 #include "threads/palloc.h"
 
 struct frame_table_entry

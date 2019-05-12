@@ -23,8 +23,8 @@
 
 void swap_init (void);
 bool swap_in (void *addr);
-bool swap_out (void);
+void * swap_out (enum palloc_flags flags);
 void read_from_disk (uint8_t *frame, int index);
-void write_to_disk (uint8_t *frame, int index);
+int write_to_disk (uint8_t *frame, int index);
 
 #endif /* vm/swap.h */

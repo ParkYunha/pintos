@@ -8,7 +8,9 @@
 #include "threads/vaddr.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
+#include "vm/frame.h"
 #include "vm/page.h"
+#include "vm/swap.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -154,42 +156,59 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
 
-
-  if(!user || is_kernel_vaddr(fault_addr) ) //
+  if(!user || is_kernel_vaddr(fault_addr) ) //FIXME: need it?
   {
      userp_exit(-1);
-  } 
+  }
+    if(!user) //kernel //FIXME: need it?
+  {
+    f->eip = (void *)f->eax;
+    f->eax = 0xffffffff;
+    return; //??
+  }
 
   bool success = false;
-  if(not_present && is_user_vaddr(fault_addr))
+  bool load = false;
+  if(not_present && is_user_vaddr(fault_addr)) //is it from valid region?
   {
-    struct sup_page_table_entry *spte 
+    struct sup_page_table_entry *spte
             = find_spte(&thread_current()->page_table, fault_addr);
     if(spte)
     {
-       success = load_page_file(spte);  //load and install_page
-    }
-    else if(f->esp - 32 < fault_addr)
-    {
-       success = stack_growth(fault_addr);
+      if (spte->type == 0) //FILE
+      {
+       load = load_page_file(spte);
+      }
+      else if(spte->type == 1) //SWAP
+      {
+        load = swap_in(spte->user_vaddr);
+      }
+       spte->accessed_bit = false;
+       return;
     }
   }
-   
-   
-  if(!user) //kernel
-  {
-    f->eip = (void *)f->eax;
-    f->eax = 0xffffffff; //FIXME: not sure
-    return; //??
-}
+    if(!load)
+    {
+      if(f->esp - 32 < fault_addr)
+      {
+        success = stack_growth(fault_addr);
+        return;
+        //FIXME: restart process???
+      }
+    }
+   if(!load)
+   {
+       userp_exit(-1);
+   } //bad-read, write, jump
+
 
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-//   printf ("Page fault at %p: %s error %s page in %s context.\n",
-//           fault_addr,
-//           not_present ? "not present" : "rights violation",
-//           write ? "writing" : "reading",
-//           user ? "user" : "kernel");
-//   kill (f);
+   printf ("Page fault at %p: %s error %s page in %s context.\n",
+           fault_addr,
+           not_present ? "not present" : "rights violation",
+           write ? "writing" : "reading",
+           user ? "user" : "kernel");
+   kill (f);
 }

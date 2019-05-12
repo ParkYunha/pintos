@@ -41,10 +41,9 @@ allocate_frame(void *addr, enum palloc_flags flags)
   lock_acquire(&frame_table_lock);
 
   void *frame_page = palloc_get_page(flags); //from user pool
-  if (frame_page == NULL)
+  if (frame_page == NULL) /* If page allocation failed. */
   {
-    /* If page allocation failed. */
-    //TODO: 뭔가 pdf에서 패닉해라 뭐해라 있었던 듯
+    frame_page = swap_out(flags);
     lock_release(&frame_table_lock);
     return NULL;
   }
@@ -74,7 +73,7 @@ void frame_free(void *frame)
   struct list_elem *l_elem;
 
   lock_acquire(&frame_table_lock);
-  for (l_elem = list_begin(&frame_table_list); l_elem != list_end(&frame_table_list); 
+  for (l_elem = list_begin(&frame_table_list); l_elem != list_end(&frame_table_list);
         l_elem = list_next(l_elem))
   {
     struct frame_table_entry *fte = list_entry(l_elem, struct frame_table_entry, elem);
@@ -88,5 +87,3 @@ void frame_free(void *frame)
   }
   lock_release(&frame_table_lock);
 }
-
-//TODO: frame_evict()

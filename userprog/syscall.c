@@ -6,9 +6,15 @@
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
 #include "filesys/off_t.h"  /* new */
+#include "vm/frame.h"
+#include "vm/page.h"
+#include "vm/swap.h"
 
 static void syscall_handler (struct intr_frame *);
 void userp_exit (int status);
+struct sup_page_table_entry* check_valid_spte(const void* vaddr, void* esp);
+void check_valid_uvaddr(const void* str, unsigned size, void* esp, bool is_buffer, bool write);
+void check_valid_pointer(const void *vaddr);
 
 struct file
   {
@@ -48,13 +54,66 @@ put_user (uint8_t *udst, uint8_t byte)
 
 void check_valid_pointer(const void *vaddr)
 {
-  if(!is_user_vaddr(vaddr))
+  if(!is_user_vaddr(vaddr))// || vaddr >= PHYS_BASE || vaddr == NULL)
   {
     // printf("%s: exit(%d)\n", thread_name(), -1);
     // thread_exit();
     userp_exit(-1);
   }
 }
+
+struct sup_page_table_entry*
+check_valid_spte(const void* vaddr, void* esp)
+{
+  struct sup_page_table_entry *spte = find_spte(&thread_current()->page_table, (void *)vaddr);
+  if (spte)
+  {
+    load_page_file(spte);
+    if(!spte->is_loaded)
+    {
+      userp_exit(-1);
+    }
+  }
+  else if (vaddr - esp <= 32)
+  {
+    if(!stack_growth((void *)vaddr))
+    {
+      userp_exit(-1);
+    }
+  }
+  return spte;
+}
+
+void
+check_valid_uvaddr(const void* str, unsigned size, void* esp, bool is_buffer, bool write)
+{
+  if(is_buffer)
+  {
+    char* buffer = (char *) str;
+    unsigned i=0;
+    while(i<size)
+    {
+      struct sup_page_table_entry *spte = check_valid_spte(str, esp);
+      if(spte && write && !spte->writable)
+      {
+        userp_exit(-1);
+      }
+      i++;
+      buffer++;
+    }
+  }
+  else
+  {
+    check_valid_spte(str, esp);
+    while(* (char*)str != 0)
+    {
+      str = (char*)str + 1;
+      check_valid_spte(str,esp);
+    }
+  }
+}
+
+
 
 void
 syscall_init (void)
@@ -71,6 +130,7 @@ syscall_handler (struct intr_frame *f)
 
   //sc-bad-sp
   check_valid_pointer(f->esp);
+  check_valid_spte(f->esp, f->esp);
   if(get_user((uint8_t *)f->esp) == -1)
   {
     userp_exit(-1);
@@ -108,6 +168,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXEC: //2
     {
       check_valid_pointer((f->esp) + 4); //file = first
+      check_valid_uvaddr((f->esp) + 4, NULL, f->esp, false, false);
       f->eax = process_execute(*(const char **)(f->esp+4));
       //process_execute(*(char **)((f->esp) + 4));
       break;
@@ -132,6 +193,7 @@ syscall_handler (struct intr_frame *f)
       check_valid_pointer((f->esp) + 4); //file = first
       check_valid_pointer((f->esp) + 8); //initial_size = second
       check_valid_pointer(second); //also a pointer
+      check_valid_uvaddr((f->esp) + 4, NULL, f->esp, false, false);
 
       sema_down(&file_sema);
       f->eax = filesys_create((const char *)first, (int32_t)(second));
@@ -147,6 +209,7 @@ syscall_handler (struct intr_frame *f)
         userp_exit(-1);
       }
       check_valid_pointer((f->esp) + 4); //file = first
+      check_valid_uvaddr((f->esp) + 4, NULL, f->esp, false, false);
       sema_down(&file_sema);
       f->eax = filesys_remove((const char *)first);
       sema_up(&file_sema);
@@ -163,6 +226,7 @@ syscall_handler (struct intr_frame *f)
 
       check_valid_pointer((f->esp) + 4); //file = first
       check_valid_pointer(*(char **)(f->esp + 4)); //also a pointer
+      check_valid_uvaddr((f->esp) + 4, NULL, f->esp, false, false);
       // if(get_user((uint8_t *)(f->esp + 4)) == -1) //check if null or unmapped
       // {
       //   exit(-1);
@@ -227,6 +291,7 @@ syscall_handler (struct intr_frame *f)
       check_valid_pointer((f->esp) + 8); //buffer = second
       check_valid_pointer((f->esp) + 12); //size = third
       check_valid_pointer(second); //also a pointer
+      check_valid_uvaddr((f->esp) + 8, third, f->esp, true, true);
 
       if(get_user((uint8_t *)(f->esp + 4)) == -1) //check if null or unmapped
       {
@@ -270,6 +335,7 @@ syscall_handler (struct intr_frame *f)
       check_valid_pointer((f->esp) + 8); //buffer = second
       check_valid_pointer((f->esp) + 12); //size = third
       check_valid_pointer(second);  //also a pointer
+      check_valid_uvaddr((f->esp) + 8, third, f->esp, true, false);
 
       //check buffer validity
       for(i = 0; i < third; ++i)

@@ -3,11 +3,13 @@
 
 #include <stdint.h> //unint32_t
 #include <stdbool.h>
+#include <string.h>
 #include <list.h>
 #include <hash.h>
 #include <debug.h>
 
 #include "vm/page.h"
+#include "vm/frame.h"
 
 #include "filesys/file.h"
 #include "threads/vaddr.h"
@@ -21,12 +23,14 @@
 #include "userprog/syscall.h"
 
 // 8MB
-#define MAX_STACK_SIZE (1<<23) 
+#define MAX_STACK_SIZE (1<<23)
 
 struct sup_page_table_entry
 {
 	uint32_t* user_vaddr;
 	uint64_t access_time;
+
+	int type; // 0:FILE  1:SWAP  2:MMAP
 
 	bool dirty_bit;
 	bool accessed_bit;
@@ -38,14 +42,16 @@ struct sup_page_table_entry
 	struct file* file; // vaddr랑 맵핑된 파일
 	uint32_t offset;
 
+	size_t swap_index;
+
 	struct hash_elem hash_elem;
 };
 
 void page_init (struct hash *spt);
 struct sup_page_table_entry *allocate_page (void *addr, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable);
 
-static unsigned page_hash_func (const struct hash_elem *e, void *aux UNUSED);
-static bool page_less_func (const struct hash_elem *a, const struct hash_elem *b);
+unsigned page_hash_func (const struct hash_elem *e, void *aux UNUSED);
+bool page_less_func (const struct hash_elem *a, const struct hash_elem *b);
 
 struct sup_page_table_entry *find_spte(struct hash *spt, void *addr);
 bool load_page_file(struct sup_page_table_entry *spte);
