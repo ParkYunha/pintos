@@ -154,8 +154,6 @@ page_fault(struct intr_frame *f)
    write = (f->error_code & PF_W) != 0;
    user = (f->error_code & PF_U) != 0;
 
-   
-
    //for debug
    // printf("Page fault at %p: %s error %s page in %s context.\n",
    //        fault_addr,
@@ -163,15 +161,14 @@ page_fault(struct intr_frame *f)
    //        write ? "writing" : "reading",
    //        user ? "user" : "kernel");
 
-   if (!not_present)
-   {
-      kill(f);
-   }
-
    if (is_kernel_vaddr(fault_addr))
    {
       userp_exit(-1);
    } //bad-ptr
+   if (!not_present)
+   {
+      kill(f);
+   }
 
    /* VM */
    // void *fault_page = (void *)pg_round_down(fault_addr);
@@ -203,12 +200,12 @@ page_fault(struct intr_frame *f)
          success = stack_growth(fault_addr);
          return;
       }
-      if (not_present)
-      {
-         // printf("sdfasdf\n");
-         userp_exit(-1);
-      } //bad read, write, jump
    }
+   if (not_present)
+   {
+      // printf("sdfasdf\n");
+      userp_exit(-1);
+   } //bad read, write, jump
 
    if (!user) //kernel //FIXME: need it?
    {
