@@ -135,6 +135,14 @@ syscall_handler (struct intr_frame *f)
   {
     userp_exit(-1);
   }
+  if(get_user((uint8_t *)f->esp + 4) == -1)
+  {
+    userp_exit(-1);
+  }
+  if(get_user((uint8_t *)f->esp + 8) == -1)
+  {
+    userp_exit(-1);
+  }
 
   //pt-grow-stk-sc
   thread_current()->stack = f->esp;
@@ -319,6 +327,10 @@ syscall_handler (struct intr_frame *f)
       else if(first > 2)  //not stdin
       {
         if(thread_current()->f_d[first] == NULL)
+        {
+          userp_exit(-1);
+        }
+        if(get_user(second) == -1)
         {
           userp_exit(-1);
         }
