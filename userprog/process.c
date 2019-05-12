@@ -706,8 +706,6 @@ bool install_page(void *upage, void *kpage, bool writable)
 
 
 
-
-
 // bool handle_mm_fault(struct sup_page_table_entry *spte)
 // {
 //   bool success = false;

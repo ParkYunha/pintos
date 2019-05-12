@@ -7,7 +7,7 @@
 #include <list.h>
 #include <hash.h>
 #include <debug.h>
-#include <syscall.h>
+#include <user/syscall.h>
 
 #include "vm/page.h"
 #include "vm/frame.h"
@@ -54,8 +54,7 @@ struct mmap_file
 	struct file* file;			/* Keep tracks of open files. */
 	struct list_elem elem;	/* List-elem for mmap_list. */
 	struct list mmap_sptes; /* List of sptes corresponding to the mmapped file. */
-
-}
+};
 
 void page_init (struct hash *spt);
 struct sup_page_table_entry *allocate_page (void *addr, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable);
