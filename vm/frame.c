@@ -59,7 +59,7 @@ allocate_frame(void *addr, enum palloc_flags flags)
   fte->vaddr = addr;
   fte->frame = frame_page;
   fte->owner = thread_current();
-  // fte->spte //TODO: ??
+  // fte->spte //TODO: ?? 
 
   list_push_back(&frame_table_list, &fte->elem);
   lock_release(&frame_table_lock);
@@ -67,7 +67,6 @@ allocate_frame(void *addr, enum palloc_flags flags)
   return frame_page;
 }
 
-//TODO: free frame function
 void frame_free(void *frame)
 {
   struct list_elem *l_elem;

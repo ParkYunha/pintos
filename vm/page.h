@@ -7,6 +7,7 @@
 #include <list.h>
 #include <hash.h>
 #include <debug.h>
+#include <syscall.h>
 
 #include "vm/page.h"
 #include "vm/frame.h"
@@ -22,15 +23,14 @@
 #include "userprog/process.h"
 #include "userprog/syscall.h"
 
-// 8MB
-#define MAX_STACK_SIZE (1<<23)
+#define MAX_STACK_SIZE (1 << 23) /* 8MB */
 
 struct sup_page_table_entry
 {
 	uint32_t* user_vaddr;
 	uint64_t access_time;
 
-	int type; // 0:FILE  1:SWAP  2:MMAP
+	int type; // 0:FILE  1:SWAP  2:MMAP //TODO: change to enum for readability
 
 	bool dirty_bit;
 	bool accessed_bit;
@@ -44,8 +44,18 @@ struct sup_page_table_entry
 
 	size_t swap_index;
 
-	struct hash_elem hash_elem;
+	struct hash_elem hash_elem;	/* Hash-elem for (supplemantary) page_table. */
+	struct list_elem map_elem;  /* List-elem for mmap_sptes. */
 };
+
+struct mmap_file
+{
+	mapid_t mapid;
+	struct file* file;			/* Keep tracks of open files. */
+	struct list_elem elem;	/* List-elem for mmap_list. */
+	struct list mmap_sptes; /* List of sptes corresponding to the mmapped file. */
+
+}
 
 void page_init (struct hash *spt);
 struct sup_page_table_entry *allocate_page (void *addr, struct file *file, off_t ofs, uint32_t read_bytes, uint32_t zero_bytes, bool writable);

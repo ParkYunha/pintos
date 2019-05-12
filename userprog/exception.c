@@ -168,14 +168,13 @@ page_fault(struct intr_frame *f)
       kill(f);
    }
 
-   if (is_kernel_vaddr(fault_addr)) //FIXME: need it?
+   if (is_kernel_vaddr(fault_addr))
    {
       userp_exit(-1);
    } //bad-ptr
 
    /* VM */
    // void *fault_page = (void *)pg_round_down(fault_addr);
-   // void *stack_pointer = user ? f->esp : thread_current()->stack;
    void *stack_pointer = thread_current()->stack;
 
    bool success = false;

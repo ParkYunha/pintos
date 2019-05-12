@@ -115,8 +115,10 @@ struct thread
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
 
-    /*project3*/
-    struct hash page_table;
+    /* VM: project3 */
+    struct hash page_table;             /* Supplementary page table (per-process). */
+    struct list mmap_list;              /* List of mmap_file which was mmap()ed by this process. */
+
   };
 
 /* If false (default), use round-robin scheduler.
