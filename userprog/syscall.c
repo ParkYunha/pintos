@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <syscall-nr.h>
 #include <user/syscall.h>
+#include <kernel/list.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h" //->file_sema
 #include "threads/vaddr.h"
@@ -510,7 +511,8 @@ mapid_t mmap(int fd, void *addr)
   /* Create and set up spte: Map each page of the file to the filesystem. */
 
   size_t offset;
-  for (offset = 0; offset < file_length(f_copy); offset += PGSIZE) {
+  for (offset = 0; offset < file_length(f_copy); offset += PGSIZE) 
+  {
     void *file_addr = addr + offset;
 
     size_t read_bytes = (offset + PGSIZE < file_length(f_copy) ? PGSIZE : file_length(f_copy) - offset);
@@ -544,7 +546,45 @@ mapid_t mmap(int fd, void *addr)
 
 void munmap(mapid_t mapping)
 {
-  printf("here is m-unmap\n");
+  struct thread *t = thread_current();
+  /* Find mmap_file (whose mapid = mapping) from mmap_list. */
+  struct mmap_file *mfile = NULL;
+  struct list_elem *e;
+  if(list_empty(&t->mmap_list))
+  {
+    //error-handling
+    userp_exit(-1);
+  }
+  for(e = list_begin(&t->mmap_list); e != list_end(&t->mmap_list); e = list_next(e))
+  {
+    mfile = list_entry(e, struct mmap_file, elem);
+    if(mfile->mapid == mapping)
+    {
+      break;
+    }
+  }
+
+  if(mfile == NULL)
+  {
+    //error handling
+    userp_exit(-1); //FIXME: 맞나
+  }
+
+  /* Delete sptes. */
+  sema_down(&file_sema);
+  struct list_elem *le;
+  struct sup_page_table_entry *spte = NULL;
+  for(le = list_begin(&mfile->mmap_sptes); le != list_end(&mfile->mmap_sptes); le = list_next(le))
+  {
+    spte = list_entry(le, struct sup_page_table_entry, map_elem);
+    hash_delete(&thread_current()->page_table, &spte->hash_elem);
+  }
+  /* Delete mmap_file. */
+  list_remove(&mfile->elem);
+  file_close(mfile->file);
+  free(mfile);
+
+  sema_up(&file_sema);
 }
 
 
