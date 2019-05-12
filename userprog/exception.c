@@ -155,17 +155,16 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-
-  if(!user || is_kernel_vaddr(fault_addr) ) //FIXME: need it?
+  if(is_kernel_vaddr(fault_addr) ) //FIXME: need it?
   {
      userp_exit(-1);
-  }
-    if(!user) //kernel //FIXME: need it?
-  {
-    f->eip = (void *)f->eax;
-    f->eax = 0xffffffff;
-    return; //??
-  }
+  } //bad-ptr
+
+   /* VM */
+   // void *fault_page = (void *)pg_round_down(fault_addr);
+   // void *stack_pointer = user ? f->esp : thread_current()->stack;
+   void *stack_pointer = thread_current()->stack;
+  
 
   bool success = false;
   bool load = false;
@@ -189,17 +188,23 @@ page_fault (struct intr_frame *f)
   }
     if(!load)
     {
-      if(f->esp - 32 < fault_addr)
+      if((f->esp - 32 <= fault_addr || stack_pointer < fault_addr ) && (PHYS_BASE - MAX_STACK_SIZE <= fault_addr && fault_addr < PHYS_BASE))
       {
         success = stack_growth(fault_addr);
         return;
-        //FIXME: restart process???
       }
+      if(not_present) 
+      {
+         userp_exit(-1);
+      } //bad read, write, jump
     }
-   if(!load)
-   {
-       userp_exit(-1);
-   } //bad-read, write, jump
+   
+    if(!user) //kernel //FIXME: need it?
+  {
+    f->eip = (void *)f->eax;
+    f->eax = 0xffffffff;
+    return;
+  }
 
 
   /* To implement virtual memory, delete the rest of the function

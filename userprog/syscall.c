@@ -136,6 +136,9 @@ syscall_handler (struct intr_frame *f)
     userp_exit(-1);
   }
 
+  //pt-grow-stk-sc
+  thread_current()->stack = f->esp;
+
 
   int sys_num  = *(uint32_t *)(f->esp);
 
